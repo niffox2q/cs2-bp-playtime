@@ -16,6 +16,9 @@ class CBasePlayerController;
 #include "metamod_oslink.h"
 
 #include "include/menus.h"
+#include "include/utils.h"
+#include "include/players.h"
+
 #include "include/battlepass_api.h"
 
 
