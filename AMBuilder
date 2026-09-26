@@ -23,7 +23,7 @@ for sdk_target in MMSPlugin.sdk_targets:
 
   binary.sources += [
     'playtime.cpp',
-    os.path.join('..', '..' , 'SchemaEntity', 'schemasystem.cpp'),
+    os.path.join('../..' , 'SchemaEntity', 'schemasystem.cpp'),
   ]
 
   if cxx.target.arch == 'x86':
