@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <algorithm>
 
-#include "ahh.h"
 
 Playtime g_Playtime;
 PLUGIN_EXPOSE(Playtime, g_Playtime);
@@ -18,25 +17,7 @@ IMenusApi* menus_api;
 IPlayersApi* players_api;
 IBattlePassApi* bp_api;
 
-std::string sServerMod;
-
 #define MAX_PLAYERS 64
-
-void LoadConfig() {
-    KeyValues* config = new KeyValues("Config");
-    const char* path = "addons/configs/Battlepass/core.ini";
-    if (!config->LoadFromFile(g_pFullFileSystem, path)) {
-        utils->ErrorLog("%s Failed to load: %s",g_PLAPI->GetLogTag(), path);
-        delete config;
-        return;
-        
-    }
-
-    sServerMod = config->GetString("mod","");
-
-
-    delete config;
-}
 
 CGameEntitySystem* GameEntitySystem() {
     return utils ? utils->GetCGameEntitySystem() : nullptr;
@@ -70,16 +51,18 @@ bool Playtime::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool
     return true;
 }
 
+
+
 void Playtime::AllPluginsLoaded() {
     int ret;
-    utils = (IUtilsApi*)g_SMAPI->MetaFactory(Utils_INTERFACE, &ret, nullptr);
+    utils = (IUtilsApi*)g_SMAPI->MetaFactory(UTILS_INTERFACE, &ret, nullptr);
     if (ret == META_IFACE_FAILED) {
         META_CONPRINTF("%s | Missing UTILS plugin.\n", g_PLAPI->GetLogTag());
         engine->ServerCommand(("meta unload " + std::to_string(g_PLID)).c_str());
         return;
     }
 
-    menus_api = (IMenusApi*)g_SMAPI->MetaFactory(Menus_INTERFACE, &ret, nullptr);
+    menus_api = (IMenusApi*)g_SMAPI->MetaFactory(MENUS_INTERFACE, &ret, nullptr);
     if (ret == META_IFACE_FAILED) {
         META_CONPRINTF("%s | Missing UTILS plugin.",g_PLAPI->GetLogTag());
         engine->ServerCommand(("meta unload " + std::to_string(g_PLID)).c_str());
@@ -94,21 +77,26 @@ void Playtime::AllPluginsLoaded() {
     }
 
     utils->CreateTimer(60.0f,[](){
-        for (int iSlot = 0; iSlot <= MAX_PLAYERS;iSlot++) {
-            auto pController = CCSPlayerController::FromSlot(iSlot);
+        for (int i = 0; i < MAX_PLAYERS; i++) {
+            auto pController = CCSPlayerController::FromSlot(i);
             if (!pController) continue;
-            auto pPawn = pController->GetPlayerPawn();
-            if (!pPawn) continue;
-            if (pPawn->IsBot()) continue;
 
-            int iTeam = pPawn->GetTeam();
+            auto pPawn = pController->GetPlayerPawn();
+            if (!pPawn || pPawn->IsBot()) continue;
+
+            int iTeam = pController->GetTeam();
             if (iTeam < 1 || iTeam > 3) continue;
 
-            bp_api->SendCustomEvent(iSlot, "playtime", {{"mod",sServerMod}}, {{"team", iTeam}});
+            bp_api->SendCustomEvent(i,"playtime",{},{{"team",iTeam}});            
         }
+        
         
         return 60.0f;
     });
+
+    utils->StartupServer(g_PLID, StartupServer);
+
+    
 
 }
 
@@ -126,4 +114,4 @@ const char* Playtime::GetLicense() { return "GPL"; }
 const char* Playtime::GetLogTag() { return "[BP] Playtime"; }
 const char* Playtime::GetName() { return "[BP] Playtime"; }
 const char* Playtime::GetURL() { return "https://t.me/niffox_2q"; }
-const char* Playtime::GetVersion() { return "1.0.0"; }
+const char* Playtime::GetVersion() { return "1.0.1"; }
